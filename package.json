@@ -1,0 +1,27 @@
+{
+  "name": "pollar",
+  "version": "0.0.1",
+  "description": "A geolocative polling API",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/CMoncur/pollar.git"
+  },
+  "author": "Cody Moncur",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/CMoncur/pollar/issues"
+  },
+  "homepage": "https://github.com/CMoncur/pollar#readme",
+  "dependencies": {
+    "express": "^4.14.0",
+    "geoip-lite": "^1.1.8",
+    "mongoose": "^4.6.0",
+    "pug": "^2.0.0-beta6",
+    "request": "^2.74.0",
+    "socket.io": "^1.4.8"
+  }
+}
