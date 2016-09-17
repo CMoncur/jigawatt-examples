@@ -17,25 +17,55 @@ mongoose.connect('mongodb://localhost/data/pollar-dev')
 
 /* --- ROUTES --- */
 app.get('/', (req, res)=> {
-  res.render('index', {
-    title     : 'pollar',
-    stuff     : 'hay dude'
+  let poll = schema.Poll.findOne({ title: 'Test' }, (err, mgRes)=> {
+    if (err) return console.error(err)
+    return mgRes
+  })
+
+  let votes = schema.Vote.find({ poll_id: '57dcb156ba31c729fdb9b812' }, (err, mgRes)=> {
+    if (err) return console.error(err)
+    return mgRes
+  })
+
+  res.render('index',
+    { title   : 'pollar'
+    , poll    : poll
+    , votes   : votes
   })
 })
 
 app.get('/makedevpoll', (req, res)=> {
-  let poll = new schema.Poll({
-    title             : ''
-  , questions         : { type: String, required: true }
-  , creator           : { type: String, required: true }
-  , location          : { type: String, required: true }
-  , location_type     : { type: String, required: true }
-  , private           : { type: Boolean, required: true }
+  let poll = new schema.Poll(
+  { title             : 'Test'
+  , questions         : [ 'Lorem'
+                        , 'Ipsum'
+                        , 'Dolor'
+                        , 'Sit'
+                        , 'Amet'
+                        ]
+  , creator_id        : '1'
+  , location          : 'Test'
+  , location_type     : 'Test'
+  , private           : false
   })
 
   poll.save((err, poll)=> {
     if (err) return console.log(err)
     console.log(poll)
+  })
+})
+
+app.get('/votedevpoll', (req, res)=> {
+  let vote = new schema.Vote(
+  { poll_id     : '57dcb156ba31c729fdb9b812'
+  , user_id     : '1'
+  , answer      : 3
+  , private     : false
+  })
+
+  vote.save((err, vote)=> {
+    if (err) return console.log(err)
+    console.log(vote)
   })
 })
 
@@ -47,7 +77,7 @@ io.on('connection', (socket)=> {
     console.log('User disconnected')
   })
 
-  socket.emit('user connected', 'sup')
+  socket.emit('user connected', 'socket.io is working...')
 })
 
 /* --- SERVER --- */
