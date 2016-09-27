@@ -19,35 +19,35 @@ mongoose.connect('mongodb://localhost/data/pollar-dev')
 app.get('/', (req, res)=> {
   let poll = schema.Poll.findOne({ title: 'Test' }, (err, mgRes)=> {
     if (err) return console.error(err)
-    return mgRes
+    console.log(mgRes.title)
   })
 
   let votes = schema.Vote.find({ poll_id: '57dcb156ba31c729fdb9b812' }, (err, mgRes)=> {
     if (err) return console.error(err)
-    return mgRes
+    console.log(mgRes)
   })
 
   res.render('index',
     { title   : 'pollar'
-    , poll    : poll
-    , votes   : votes
+    , poll    : 'poll'
+    , votes   : 'votes'
   })
 })
 
 app.get('/makedevpoll', (req, res)=> {
   let poll = new schema.Poll(
-  { title             : 'Test'
-  , questions         : [ 'Lorem'
-                        , 'Ipsum'
-                        , 'Dolor'
-                        , 'Sit'
-                        , 'Amet'
-                        ]
-  , creator_id        : '1'
-  , location          : 'Test'
-  , location_type     : 'Test'
-  , private           : false
-  })
+    { title             : 'Test'
+    , questions         : [ 'Lorem'
+                          , 'Ipsum'
+                          , 'Dolor'
+                          , 'Sit'
+                          , 'Amet'
+                          ]
+    , creator_id        : '1'
+    , location          : 'Test'
+    , location_type     : 'Test'
+    , private           : false
+    })
 
   poll.save((err, poll)=> {
     if (err) return console.log(err)
