@@ -1,87 +1,75 @@
 /* --- NODE DEPENDENCIES --- */
 const express     = require('express')
     , app         = express()
-    , svr         = require('http').createServer(app)
-    , io          = require('socket.io')(svr)
-    , mongoose    = require('mongoose')
-    , db          = mongoose.connection
-    , request     = require('request')
+    , JW          = require('jigawatt')
+    , db          = require('mongoose')
+    , R           = require('ramda')
 
 /* --- INTERNAL DEPENDENCIES --- */
 const schema = require('./schemas')
 
 /* --- ENVIRONMENT SETTINGS --- */
-app.set('view engine', 'pug') // Declare Pug as templating engine
-app.use(express.static(__dirname)) // Declare default directory
-mongoose.connect('mongodb://localhost/data/pollar-dev')
+db.connect('mongodb://localhost/data/pollar-dev')
+db.Promise = global.Promise
+
+/* --- Jigawatt --- */
+const getAnswer   = (obj) => R.dec(obj.answer)
+const getOnlyCity = (string) => {
+  let city = R.replace(/\,.*$/, '', string)
+  return R.assoc(city, 0, {})
+}
+
+const tallyVote = (res) => {
+
+  console.log(res)
+  return res
+}
+
+const mergeData = (options, responses) => {
+  return tallyVote({ options, responses })
+}
+
+const jwPollDetails = {
+  awesomize: (v) => ({
+    poll      : { validate : [ v.required ] }
+  , options   : { read : R.path([ 'poll' ]) }
+  , responses : { validate : [ v.required ] }
+  })
+
+, io: (req, data) => ({
+    poll    : data.poll.title
+  //, options : R.map(getOnlyCity, data.options.questions)
+  , results : mergeData(
+      R.map(getOnlyCity, data.options.questions)
+    , R.map(getAnswer, data.responses)
+    )
+  })
+}
+
+/* --- DB Interaction --- */
+const findPoll  = (id) => schema.Poll.findOne({ _id: id })
+const findVotes = (id) => schema.Vote.find({ poll_id: id })
 
 /* --- ROUTES --- */
-app.get('/', (req, res)=> {
-  let poll = schema.Poll.findOne({ title: 'Test' }, (err, mgRes)=> {
-    if (err) return console.error(err)
-    console.log(mgRes.title)
-  })
+app.get('/poll-results', (req, res) => {
+  const data = {
+    poll      : findPoll('57f691081739bcb1144630a2')
+  , responses : findVotes('57f691081739bcb1144630a2')
+  }
 
-  let votes = schema.Vote.find({ poll_id: '57dcb156ba31c729fdb9b812' }, (err, mgRes)=> {
-    if (err) return console.error(err)
-    console.log(mgRes)
-  })
+  const formatPoll = JW(jwPollDetails, data)
 
-  res.render('index',
-    { title   : 'pollar'
-    , poll    : 'poll'
-    , votes   : 'votes'
-  })
-})
-
-app.get('/makedevpoll', (req, res)=> {
-  let poll = new schema.Poll(
-    { title             : 'Test'
-    , questions         : [ 'Lorem'
-                          , 'Ipsum'
-                          , 'Dolor'
-                          , 'Sit'
-                          , 'Amet'
-                          ]
-    , creator_id        : '1'
-    , location          : 'Test'
-    , location_type     : 'Test'
-    , private           : false
+  formatPoll(data, { json : (data) => data })
+    .then((pollDetails) => {
+      res.send(pollDetails)
     })
-
-  poll.save((err, poll)=> {
-    if (err) return console.log(err)
-    console.log(poll)
-  })
-})
-
-app.get('/votedevpoll', (req, res)=> {
-  let vote = new schema.Vote(
-  { poll_id     : '57dcb156ba31c729fdb9b812'
-  , user_id     : '1'
-  , answer      : 3
-  , private     : false
-  })
-
-  vote.save((err, vote)=> {
-    if (err) return console.log(err)
-    console.log(vote)
-  })
-})
-
-/* --- SOCKETS --- */
-io.on('connection', (socket)=> {
-  console.log('User connected')
-
-  socket.on('disconnect', ()=> {
-    console.log('User disconnected')
-  })
-
-  socket.emit('user connected', 'socket.io is working...')
+    .catch((err) => {
+      console.log('There was an error here: ' + err)
+    })
 })
 
 /* --- SERVER --- */
-svr.listen(3000, (err)=> {
+app.listen(8000, (err) => {
   if (err) return console.log('Could not start server!')
-  console.log('Listening on port 3000')
+  console.log('Listening on port 8000')
 })

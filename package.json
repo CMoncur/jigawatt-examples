@@ -19,9 +19,7 @@
   "dependencies": {
     "express": "^4.14.0",
     "geoip-lite": "^1.1.8",
-    "mongoose": "^4.6.0",
-    "pug": "^2.0.0-beta6",
-    "request": "^2.74.0",
-    "socket.io": "^1.4.8"
+    "jigawatt": "^0.2.0",
+    "mongoose": "^4.6.0"
   }
 }
