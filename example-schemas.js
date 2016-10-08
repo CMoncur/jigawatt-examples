@@ -16,5 +16,7 @@ const voteSchema = new mongoose.Schema (
   , private   : { type: Boolean, required: true }
   })
 
-exports.Poll = mongoose.model('Poll', pollSchema)
-exports.Vote = mongoose.model('Vote', voteSchema)
+module.exports = {
+  Poll : mongoose.model('Poll', pollSchema)
+, Vote : mongoose.model('Vote', voteSchema)
+}
