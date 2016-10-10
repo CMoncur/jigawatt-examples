@@ -8,6 +8,8 @@ const express = require('express')
 /* --- INTERNAL DEPENDENCIES --- */
 const db = require('./example-schemas')
 
+const schema = require('./example-schemas')
+
 /* --- ENVIRONMENT SETTINGS --- */
 mg.connect('mongodb://localhost/data/pollar-dev')
 mg.Promise = global.Promise
@@ -19,7 +21,7 @@ from the database unmatched to the option thereunto pertaining.
 We need to decrement each response so they align with the options
 that the users are voting for.
 */
-// getAnswer :: [ Object ] -> [ Integer ]
+// getAnswer :: [ Integer ] -> [ Integer ]
 const getAnswer = (arr) => R.compose(
   R.map(R.dec)
 , R.pluck('answer')
@@ -38,6 +40,14 @@ const getCity = (obj) => R.map(
 )
 
 /*
+We know that the length of the IDs for each poll are equal to 24,
+so we want to ensure that the ID gathered from the endpoint is
+the correct length.
+*/
+// isCorrectLength :: String -> Bool
+const isCorrectLength = (str) => R.equals(24, str.length)
+
+/*
 We have two lists now -- a list of cities and a list of responses.
 We have to tally the votes for each city and display the total
 for each city alongside the city name.
@@ -47,6 +57,7 @@ const tallyVotes = (options, responses) => {
   // Tally total vote for a specific city
   return R.map((str) => {
     let ind = R.indexOf(str, options)
+
     let votes = R.compose(
       R.length
     , R.filter(R.equals(ind))
@@ -57,9 +68,16 @@ const tallyVotes = (options, responses) => {
 }
 
 /*
-The Jigawatt middleware function (pollDetails) is given two
-promises from  MongoDB. The first is a poll, which when resolved,
-will have a structure like this:
+This Jigawatt middleware function is given an ID as input data.
+First, it ensures that the ID is only integers and lowercase
+numbers, then ensures that is is the correct length to query the
+database.
+
+IO makes two calls to the database, one to gather the poll and
+details, and the next to gather all responses to that poll, to
+include data about the responder.
+
+The poll will have a structure like this:
 
 { _id: 57f691081739bcb1144630a2,
   title: 'What is your favorite city?',
@@ -75,8 +93,7 @@ will have a structure like this:
      'Wilmington, North Carolina',
      'Galveston, Texas' ] }
 
-The second is a list of responses to that poll. It will have a
-structure such as:
+And the responses will be structured like this:
 
 [ { _id: 57f69170526f05b5dbe4d035,
     poll_id: '57f691081739bcb1144630a2',
@@ -94,38 +111,48 @@ structure such as:
   ...
 ]
 
-Our Jigawatt middleware
+Lastly, transform will take the data collected by IO and format
+it in a structure that we want.  In this case, we want to return
+an object with a poll title and a list of response objects that
+include cities and their respective votes:
+
+{
+	"poll": "What is your favorite city?",
+	"results": [ { "Juneau": 2 }
+             , { "Vladivostok": 3 }
+             , { "Redding": 1	}
+             , { "Wilmington": 0 }
+             , { "Galveston": 2	}
+             ]
+}
 */
 const pollDetails = {
   // We have three
   awesomize: (v) => ({
-    poll     : { validate : [ v.required ] }
-  , options  : {
-      read     : R.path([ 'poll' ])
-    , sanitize : [ getCity ]
-    , validate : [ v.required, v.isArray ]
+    pollId : {
+      sanitize : R.toLower
+    , validate : isCorrectLength
     }
-  , responses : {
-      read     : R.path([ 'responses' ])
-    , sanitize : [ getAnswer ]
-    , validate : [ v.required, v.isArray ]
-    }
+  })
+
+, io: (req, data) => ({
+    poll      : db.Poll.findOne({ _id: data.pollId })
+  , responses : db.Vote.find({ poll_id: data.pollId })
   })
 
 , transform: (req, data) => ({
     poll    : data.poll.title
-  , results : tallyVotes(data.options, data.responses)
+  , results : tallyVotes(
+                getCity(data.poll)
+              , getAnswer(data.responses)
+              )
   })
 }
 
 /* --- ROUTES --- */
 app.get('/best-city-results', (req, res) => {
-  const data = {
-    poll      : db.Poll.findOne({ _id: '57f691081739bcb1144630a2' })
-  , responses : db.Vote.find({ poll_id: '57f691081739bcb1144630a2' })
-  }
-
-  const formatPoll = JW(pollDetails, data)
+  const data       = { pollId : '57fc0a8c68faaf2e17250226' }
+      , formatPoll = JW(pollDetails, data)
 
   formatPoll(data, { json : (data) => data })
     .then((details) => res.send(details))
