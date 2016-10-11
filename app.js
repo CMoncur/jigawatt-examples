@@ -8,8 +8,6 @@ const express = require('express')
 /* --- INTERNAL DEPENDENCIES --- */
 const db = require('./example-schemas')
 
-const schema = require('./example-schemas')
-
 /* --- ENVIRONMENT SETTINGS --- */
 mg.connect('mongodb://localhost/data/pollar-dev')
 mg.Promise = global.Promise

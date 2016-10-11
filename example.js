@@ -8,8 +8,6 @@ const express = require('express')
 /* --- INTERNAL DEPENDENCIES --- */
 const db = require('./example-schemas')
 
-const schema = require('./example-schemas')
-
 /* --- ENVIRONMENT SETTINGS --- */
 mg.connect('mongodb://localhost/data/pollar-dev')
 mg.Promise = global.Promise
@@ -127,7 +125,6 @@ include cities and their respective votes:
 }
 */
 const pollDetails = {
-  // We have three
   awesomize: (v) => ({
     pollId : {
       sanitize : R.toLower
@@ -151,12 +148,12 @@ const pollDetails = {
 
 /* --- ROUTES --- */
 app.get('/best-city-results', (req, res) => {
-  const data       = { pollId : '57fc0a8c68faaf2e17250226' }
+  const data       = { pollId : req.params.id }
       , formatPoll = JW(pollDetails, data)
 
   formatPoll(data, { json : (data) => data })
     .then((details) => res.send(details))
-    .catch((err) => console.log('There was an error here: ' + err))
+    .catch((err)    => console.log('There was an error here: ' + err))
 })
 
 /* --- SERVER --- */
