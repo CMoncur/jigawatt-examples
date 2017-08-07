@@ -1,4 +1,1 @@
-# pollar
-### A geolocative polling API
-
-## more to follow
+# A simple jigawatt example
